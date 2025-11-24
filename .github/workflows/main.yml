@@ -1,0 +1,57 @@
+name: Laravel CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  laravel-tests:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: hospital_db
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2'
+        extensions: mbstring, xml, mysql, curl
+
+    - name: Install Composer Dependencies
+      run: composer install --no-interaction --prefer-dist
+
+    - name: Copy .env
+      run: cp .env.example .env
+
+    - name: Generate App Key
+      run: php artisan key:generate
+
+    - name: Run Database Migrations
+      env:
+        DB_CONNECTION: mysql
+        DB_HOST: 127.0.0.1
+        DB_PORT: 3306
+        DB_DATABASE: hospital_db
+        DB_USERNAME: root
+        DB_PASSWORD: root
+      run: php artisan migrate --force
+
+    - name: Run Test Suite
+      run: php artisan test
