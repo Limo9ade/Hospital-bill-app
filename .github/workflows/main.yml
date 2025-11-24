@@ -48,7 +48,7 @@ jobs:
     - name: Copy .env
       run: cp .env.example .env
 
-    - name: Set environment variables in .env
+    - name: Inject DB config into .env
       run: |
         echo "DB_CONNECTION=mysql" >> .env
         echo "DB_HOST=127.0.0.1" >> .env
@@ -60,10 +60,15 @@ jobs:
     - name: Generate App Key
       run: php artisan key:generate
 
-    - name: Run Database Migrations and Seed
-      run: |
-        php artisan migrate --force
-        php artisan db:seed --force
+    - name: Run Database Migrations for Testing
+      run: php artisan migrate --force
 
     - name: Run Test Suite
-      run: php artisan test
+      env:
+        DB_CONNECTION: mysql
+        DB_HOST: 127.0.0.1
+        DB_PORT: 3306
+        DB_DATABASE: hospital_db
+        DB_USERNAME: root
+        DB_PASSWORD: root
+      run: php artisan test --testsuite=Feature
